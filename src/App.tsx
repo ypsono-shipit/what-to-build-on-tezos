@@ -115,7 +115,7 @@ export default function App() {
         abi: ABI,
         functionName: 'getSuggestions',
       });
-      const list = (raw as Suggestion[]).map((s) => ({
+      const list = (raw as unknown as Suggestion[]).map((s) => ({
         id: Number(s.id),
         author: s.author,
         text: s.text,
