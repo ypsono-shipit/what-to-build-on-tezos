@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { createPublicClient, createWalletClient, custom, http, readContract, writeContract } from 'viem';
+import { createPublicClient, createWalletClient, custom, http } from 'viem';
 import { ABI, CONTRACT_ADDRESS, ETHERLINK_CHAIN } from './abi';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ export default function App() {
     try {
       setLoading(true);
       const client = createPublicClient({ chain: ETHERLINK_CHAIN, transport: http() });
-      const raw = await readContract(client, {
+      const raw = await client.readContract({
         address: CONTRACT_ADDRESS!,
         abi: ABI,
         functionName: 'getSuggestions',
@@ -127,7 +127,7 @@ export default function App() {
       if (account) {
         const checks = await Promise.all(
           list.map((s) =>
-            readContract(client, { address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'voted', args: [BigInt(s.id), account] })
+            client.readContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'voted', args: [BigInt(s.id), account] })
           )
         );
         setVotedIds(new Set(list.filter((_, i) => checks[i]).map((s) => s.id)));
@@ -202,7 +202,7 @@ export default function App() {
     try {
       setSubmitting(true);
       const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
-      const hash = await writeContract(walletClient, {
+      const hash = await walletClient.writeContract({
         address: CONTRACT_ADDRESS!,
         abi: ABI,
         functionName: 'addSuggestion',
@@ -232,7 +232,7 @@ export default function App() {
     if (votedIds.has(id)) { showToast('Already voted'); return; }
     try {
       const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
-      const hash = await writeContract(walletClient, {
+      const hash = await walletClient.writeContract({
         address: CONTRACT_ADDRESS!,
         abi: ABI,
         functionName: 'upvote',
