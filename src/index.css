@@ -1,0 +1,333 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --tezos: #2C7DF7;
+  --cork: #C49A52;
+  --cork-dark: #A07840;
+  --note-yellow: #FFF176;
+  --note-blue: #B3E5FC;
+  --note-green: #C8E6C9;
+  --note-pink: #F8BBD9;
+  --note-orange: #FFE0B2;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #1a1205;
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cork board */
+.cork-board {
+  flex: 1;
+  background-color: var(--cork);
+  background-image:
+    radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1px);
+  background-size: 18px 18px;
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100vh - 64px);
+}
+
+.cork-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
+  pointer-events: none;
+}
+
+/* Post-it note */
+.postit {
+  position: absolute;
+  width: 180px;
+  min-height: 160px;
+  padding: 32px 14px 14px;
+  border-radius: 2px;
+  cursor: grab;
+  user-select: none;
+  box-shadow:
+    3px 3px 8px rgba(0,0,0,0.25),
+    0 0 2px rgba(0,0,0,0.1);
+  transition: box-shadow 0.15s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  touch-action: none;
+}
+
+.postit:hover {
+  box-shadow: 5px 5px 16px rgba(0,0,0,0.35), 0 0 2px rgba(0,0,0,0.15);
+  z-index: 100;
+}
+
+.postit.dragging {
+  cursor: grabbing;
+  box-shadow: 8px 8px 24px rgba(0,0,0,0.4);
+  z-index: 999;
+  transform: scale(1.03) !important;
+}
+
+/* Pin */
+.postit-pin {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff6b6b, #c0392b);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.3);
+  z-index: 2;
+}
+
+.postit-text {
+  font-family: 'Caveat', cursive;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #2d2d2d;
+  flex: 1;
+  word-break: break-word;
+}
+
+.postit-meta {
+  font-family: 'Caveat', cursive;
+  font-size: 12px;
+  color: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.postit-vote-btn {
+  background: rgba(0,0,0,0.08);
+  border: none;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-family: 'Caveat', cursive;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.6);
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.postit-vote-btn:hover {
+  background: rgba(0,0,0,0.16);
+  color: rgba(0,0,0,0.8);
+}
+
+.postit-vote-btn.voted {
+  background: rgba(44, 125, 247, 0.2);
+  color: #2C7DF7;
+}
+
+/* Header */
+.header {
+  height: 64px;
+  background: linear-gradient(135deg, #0d1117 0%, #161b27 100%);
+  border-bottom: 2px solid rgba(44, 125, 247, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 1px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: var(--tezos);
+  color: white;
+}
+
+.btn-primary:hover { background: #1a6ee8; }
+
+.btn-secondary {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+/* Add note modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal {
+  background: #1a1f2e;
+  border: 1px solid rgba(44, 125, 247, 0.2);
+  border-radius: 16px;
+  padding: 28px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+}
+
+.modal h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.modal textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px;
+  color: #fff;
+  font-family: 'Caveat', cursive;
+  font-size: 18px;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  min-height: 120px;
+}
+
+.modal textarea:focus {
+  border-color: rgba(44, 125, 247, 0.5);
+}
+
+.modal textarea::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.char-count {
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* Wallet pill */
+.wallet-pill {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(44, 125, 247, 0.1);
+  border: 1px solid rgba(44, 125, 247, 0.3);
+  color: var(--tezos);
+  font-weight: 500;
+}
+
+/* Empty state */
+.empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.empty-hint p {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  color: rgba(0,0,0,0.25);
+  line-height: 1.6;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1f2e;
+  border: 1px solid rgba(44, 125, 247, 0.3);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  z-index: 300;
+  animation: slideUp 0.3s ease;
+  white-space: nowrap;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Note count badge */
+.note-count {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 20px;
+}
