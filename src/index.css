@@ -331,3 +331,115 @@ body {
   background: rgba(255,255,255,0.06);
   border-radius: 20px;
 }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: rgba(0,0,0,0.35);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.filter-btn {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.55);
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Inter', sans-serif;
+  text-transform: capitalize;
+}
+
+.filter-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+}
+
+.filter-btn.active {
+  border-color: rgba(44,125,247,0.5);
+  color: #fff;
+  background: rgba(44,125,247,0.15);
+}
+
+.filter-count {
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 0 5px;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+/* Modal inputs */
+.modal-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.modal-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+}
+
+.modal-input:focus {
+  border-color: rgba(44,125,247,0.5);
+}
+
+.modal-input::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+
+/* Category chips in modal */
+.category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.category-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.55);
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+  text-transform: capitalize;
+}
+
+.category-chip:hover {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+}
+
+.category-chip.selected {
+  font-weight: 700;
+}
