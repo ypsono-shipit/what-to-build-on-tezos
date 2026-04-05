@@ -56,7 +56,7 @@ function savePositions(p: Record<number, NotePos>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
 }
 
-function defaultPos(id: number, count: number): NotePos {
+function defaultPos(id: number): NotePos {
   const cols = Math.max(3, Math.floor((window.innerWidth - 120) / 210));
   const col = id % cols;
   const row = Math.floor(id / cols);
@@ -148,7 +148,7 @@ export default function App() {
     const stored = loadPositions();
     const merged: Record<number, NotePos> = {};
     suggestions.forEach((s) => {
-      merged[s.id] = stored[s.id] ?? defaultPos(s.id, suggestions.length);
+      merged[s.id] = stored[s.id] ?? defaultPos(s.id);
     });
     setPositions(merged);
   }, [suggestions]);
