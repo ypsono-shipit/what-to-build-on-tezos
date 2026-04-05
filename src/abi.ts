@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS as `0x${string}` | undefined;
 
 export const ABI = [
