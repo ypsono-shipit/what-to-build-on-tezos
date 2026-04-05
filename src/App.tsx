@@ -294,10 +294,9 @@ export default function App() {
       {/* Header */}
       <header className="header">
         <div className="header-logo">
-          <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="256" cy="256" r="256" fill="#2C7DF7"/>
-            <path d="M352 160H208v64h96l-112 128h160v-64h-96l112-128z" fill="white"/>
-          </svg>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4 }}>
+            <img src="/tezos-logo.png" alt="Tezos" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
           <div>
             <div className="header-title">What to Build on Tezos</div>
             <div className="header-subtitle">On-chain idea board · Etherlink · {isDemo ? 'demo mode' : 'live'}</div>
