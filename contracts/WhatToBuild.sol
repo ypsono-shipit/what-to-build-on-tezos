@@ -5,7 +5,9 @@ contract WhatToBuild {
     struct Suggestion {
         uint256 id;
         address author;
+        string name;
         string text;
+        string category;
         uint256 timestamp;
         uint256 votes;
     }
@@ -21,14 +23,22 @@ contract WhatToBuild {
         _;
     }
 
-    function addSuggestion(string calldata text) external holdsXTZ {
+    function addSuggestion(
+        string calldata text,
+        string calldata name,
+        string calldata category
+    ) external holdsXTZ {
         require(bytes(text).length > 0, "Text cannot be empty");
         require(bytes(text).length <= 280, "Text too long");
+        require(bytes(name).length <= 50, "Name too long");
+        require(bytes(category).length > 0, "Category required");
         uint256 id = _suggestions.length;
         _suggestions.push(Suggestion({
             id: id,
             author: msg.sender,
+            name: name,
             text: text,
+            category: category,
             timestamp: block.timestamp,
             votes: 0
         }));
