@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPublicClient, createWalletClient, custom, http } from 'viem';
-import { ABI, CONTRACT_ADDRESS, ETHERLINK_CHAIN, CATEGORIES, CATEGORY_COLORS, type Category } from './abi';
+import { ABI, CONTRACT_ADDRESS, ETHERLINK_CHAIN, CATEGORIES, CATEGORY_COLORS, WXTZ_ADDRESS, type Category } from './abi';
+
+// Minimal ERC-20 ABI for WXTZ balance check
+const ERC20_BALANCE_ABI = [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] }] as const;
+const MIN_WXTZ = BigInt('1000000000000000000'); // 1 WXTZ (18 decimals)
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -246,9 +250,27 @@ export default function App() {
       }
 
       // Wallet connected — post on-chain
+      const publicClient = createPublicClient({ chain: ETHERLINK_CHAIN, transport: http() });
       const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
-      const fn = account ? 'addSuggestion' : 'addSuggestionGuest';
-      const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: fn, args: [draftText.trim(), draftName.trim(), draftCategory], account });
+
+      // Check actual WXTZ balance to decide which function to call.
+      // Calling addSuggestion without WXTZ causes a revert during gas estimation → "fail to estimate gas".
+      const wxtzBalance = await publicClient.readContract({ address: WXTZ_ADDRESS, abi: ERC20_BALANCE_ABI, functionName: 'balanceOf', args: [account] });
+      const fn = (wxtzBalance as bigint) >= MIN_WXTZ ? 'addSuggestion' : 'addSuggestionGuest';
+      const callArgs = [draftText.trim(), draftName.trim(), draftCategory] as const;
+
+      // Pre-estimate gas and add a 30% buffer for Etherlink's L1 DA inclusion fee.
+      // eth_estimateGas on Etherlink returns execution + inclusion fee combined, so
+      // the raw estimate can be tight — a buffer prevents out-of-gas on submission.
+      let gas: bigint | undefined;
+      try {
+        const estimate = await publicClient.estimateContractGas({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: fn, args: callArgs, account });
+        gas = (estimate * 130n) / 100n;
+      } catch {
+        // If estimation still fails (e.g. RPC hiccup), let the wallet fall back to its own estimate
+      }
+
+      const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: fn, args: callArgs, account, ...(gas !== undefined && { gas }) });
       showToast(`Note submitted: ${hash.slice(0, 10)}…`);
       setDraftText(''); setDraftName(''); setShowModal(false);
       setTimeout(loadSuggestions, 3000);
@@ -271,8 +293,19 @@ export default function App() {
     if (votedIds.has(id)) { showToast('Already voted on this note'); return; }
     if (userVoteCount >= 5) { showToast('Vote limit reached (5 max)'); return; }
     try {
+      const publicClient = createPublicClient({ chain: ETHERLINK_CHAIN, transport: http() });
       const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
-      const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'upvote', args: [BigInt(id)], account });
+
+      // Pre-estimate with L1 DA buffer
+      let gas: bigint | undefined;
+      try {
+        const estimate = await publicClient.estimateContractGas({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'upvote', args: [BigInt(id)], account });
+        gas = (estimate * 130n) / 100n;
+      } catch {
+        // fall back to wallet estimate
+      }
+
+      const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'upvote', args: [BigInt(id)], account, ...(gas !== undefined && { gas }) });
       setVotedIds((prev) => new Set([...prev, id]));
       setUserVoteCount((prev) => prev + 1);
       showToast(`Upvoted! Tx: ${hash.slice(0, 10)}…`);
