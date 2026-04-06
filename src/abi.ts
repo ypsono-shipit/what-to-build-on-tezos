@@ -1,6 +1,6 @@
 // Paste your deployed contract address here after running: npm run deploy:mainnet
 // Leave as undefined to run in demo mode
-export const CONTRACT_ADDRESS: `0x${string}` | undefined = undefined;
+export const CONTRACT_ADDRESS: `0x${string}` | undefined = '0xb156a65e71CbA88e804122b78A04ce8935704CA7';
 
 export const CATEGORIES = ['art', 'consumer', 'defi', 'infra', 'gaming', 'nft', 'wallet'] as const;
 export type Category = typeof CATEGORIES[number];
