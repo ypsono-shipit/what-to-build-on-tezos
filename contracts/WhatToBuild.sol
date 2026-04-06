@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+interface IERC20 {
+    function balanceOf(address account) external view returns (uint256);
+}
+
 contract WhatToBuild {
+    IERC20 public constant WXTZ = IERC20(0xc9B53AB2679f573e480d01e0f49e2B5CFB7a3EAb);
+    uint256 public constant MIN_WXTZ = 1e18; // 1 WXTZ
+
     struct Suggestion {
         uint256 id;
         address author;
@@ -18,8 +25,8 @@ contract WhatToBuild {
     event SuggestionAdded(uint256 indexed id, address indexed author, string text);
     event Upvoted(uint256 indexed id, address indexed voter);
 
-    modifier holdsXTZ() {
-        require(msg.sender.balance >= 0.01 ether, "Must hold at least 0.01 XTZ");
+    modifier holdsWXTZ() {
+        require(WXTZ.balanceOf(msg.sender) >= MIN_WXTZ, "Must hold at least 1 WXTZ");
         _;
     }
 
@@ -27,7 +34,7 @@ contract WhatToBuild {
         string calldata text,
         string calldata name,
         string calldata category
-    ) external holdsXTZ {
+    ) external holdsWXTZ {
         require(bytes(text).length > 0, "Text cannot be empty");
         require(bytes(text).length <= 280, "Text too long");
         require(bytes(name).length <= 50, "Name too long");
@@ -45,7 +52,7 @@ contract WhatToBuild {
         emit SuggestionAdded(id, msg.sender, text);
     }
 
-    function upvote(uint256 id) external holdsXTZ {
+    function upvote(uint256 id) external holdsWXTZ {
         require(id < _suggestions.length, "Invalid suggestion");
         require(!voted[id][msg.sender], "Already voted");
         voted[id][msg.sender] = true;
