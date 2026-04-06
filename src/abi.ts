@@ -1,6 +1,6 @@
-/// <reference types="vite/client" />
-
-export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT as `0x${string}` | undefined;
+// Paste your deployed contract address here after running: npm run deploy:mainnet
+// Leave as undefined to run in demo mode
+export const CONTRACT_ADDRESS: `0x${string}` | undefined = undefined;
 
 export const CATEGORIES = ['art', 'consumer', 'defi', 'infra', 'gaming', 'nft', 'wallet'] as const;
 export type Category = typeof CATEGORIES[number];
