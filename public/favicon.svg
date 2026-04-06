@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Post-it shadow -->
+  <rect x="3" y="4" width="26" height="26" rx="2" fill="rgba(0,0,0,0.15)"/>
+  <!-- Post-it body -->
+  <rect x="2" y="2" width="26" height="26" rx="2" fill="#FFF176"/>
+  <!-- Fold corner -->
+  <path d="M22 2 L28 8 L22 8 Z" fill="#E6D84A"/>
+  <path d="M22 2 L28 8 L22 2 Z" fill="#FFF176"/>
+  <!-- Red pin -->
+  <circle cx="15" cy="5" r="2.5" fill="#e53e3e"/>
+  <circle cx="15" cy="5" r="1.2" fill="#ff6b6b"/>
+  <!-- Lines suggesting text -->
+  <rect x="6" y="11" width="16" height="2" rx="1" fill="rgba(0,0,0,0.2)"/>
+  <rect x="6" y="15" width="13" height="2" rx="1" fill="rgba(0,0,0,0.15)"/>
+  <rect x="6" y="19" width="15" height="2" rx="1" fill="rgba(0,0,0,0.15)"/>
+</svg>
