@@ -127,8 +127,16 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const dragRef = useRef<DragState | null>(null);
   const isDemo = !CONTRACT_ADDRESS;
+
+  // ── Mobile detection ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -275,7 +283,7 @@ export default function App() {
     }
   }
 
-  // ── Drag ──────────────────────────────────────────────────────────────────────
+  // ── Drag (desktop only) ───────────────────────────────────────────────────────
   function onMouseDown(e: React.MouseEvent, id: number) {
     if ((e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
@@ -298,6 +306,78 @@ export default function App() {
 
   const visible = activeFilter === 'all' ? suggestions : suggestions.filter((s) => s.category === activeFilter);
 
+  // ── Note renderer (shared) ────────────────────────────────────────────────────
+  function renderNote(s: Suggestion) {
+    const pos = positions[s.id];
+    const color = pos?.color ?? NOTE_COLORS[Math.abs(s.id) % NOTE_COLORS.length];
+
+    if (isMobile) {
+      return (
+        <div key={s.id} className="postit postit-mobile" style={{ backgroundColor: color }}>
+          <div className="postit-pin" style={!s.verified ? { background: 'radial-gradient(circle at 35% 35%, #aaa, #666)' } : {}} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <CategoryBadge category={s.category} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              {s.local && (
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: '#92400e', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
+                  no xtz
+                </span>
+              )}
+              {!s.local && !s.verified && (
+                <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: 'rgba(0,0,0,0.35)', background: 'rgba(0,0,0,0.08)', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
+                  guest
+                </span>
+              )}
+              {s.name && <span style={{ fontFamily: 'Caveat, cursive', fontSize: 13, color: 'rgba(0,0,0,0.5)', fontWeight: 600 }}>{s.name}</span>}
+            </div>
+          </div>
+          <p className="postit-text">{s.text}</p>
+          <div className="postit-meta">
+            <span>{shortAddr(s.author)} · {timeAgo(s.timestamp)}</span>
+            <button className={`postit-vote-btn${votedIds.has(s.id) ? ' voted' : ''}`} onClick={() => upvote(s.id)}>
+              ▲ {s.votes}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (!pos) return null;
+    return (
+      <div
+        key={s.id}
+        className={`postit${dragRef.current?.id === s.id ? ' dragging' : ''}`}
+        style={{ left: pos.x, top: pos.y, transform: `rotate(${pos.rotation}deg)`, backgroundColor: pos.color }}
+        onMouseDown={(e) => onMouseDown(e, s.id)}
+      >
+        <div className="postit-pin" style={!s.verified ? { background: 'radial-gradient(circle at 35% 35%, #aaa, #666)' } : {}} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <CategoryBadge category={s.category} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            {s.local && (
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: '#92400e', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
+                no xtz
+              </span>
+            )}
+            {!s.local && !s.verified && (
+              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: 'rgba(0,0,0,0.35)', background: 'rgba(0,0,0,0.08)', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
+                guest
+              </span>
+            )}
+            {s.name && <span style={{ fontFamily: 'Caveat, cursive', fontSize: 13, color: 'rgba(0,0,0,0.5)', fontWeight: 600 }}>{s.name}</span>}
+          </div>
+        </div>
+        <p className="postit-text">{s.text}</p>
+        <div className="postit-meta">
+          <span>{shortAddr(s.author)} · {timeAgo(s.timestamp)}</span>
+          <button className={`postit-vote-btn${votedIds.has(s.id) ? ' voted' : ''}`} onClick={() => upvote(s.id)}>
+            ▲ {s.votes}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <>
@@ -313,19 +393,23 @@ export default function App() {
           </div>
         </div>
         <div className="header-actions">
-          <span className="note-count">{suggestions.length} idea{suggestions.length !== 1 ? 's' : ''}</span>
+          <span className="note-count header-idea-count">{suggestions.length} idea{suggestions.length !== 1 ? 's' : ''}</span>
           {account && (
-            <span className="note-count" style={{ color: userVoteCount >= 5 ? '#ef4444' : 'rgba(255,255,255,0.4)' }}>
-              ▲ {5 - userVoteCount} vote{5 - userVoteCount !== 1 ? 's' : ''} left
+            <span className="note-count header-vote-count" style={{ color: userVoteCount >= 5 ? '#ef4444' : 'rgba(255,255,255,0.4)' }}>
+              ▲ {5 - userVoteCount} left
             </span>
           )}
           {account ? (
             <span className="wallet-pill">{shortAddr(account)}</span>
           ) : (
-            <button className="btn btn-secondary" onClick={connect}>Connect Wallet</button>
+            <button className="btn btn-secondary" onClick={connect}>
+              <span className="btn-label-full">Connect Wallet</span>
+              <span className="btn-label-short">Connect</span>
+            </button>
           )}
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            + Pin Idea
+            <span className="btn-label-full">+ Pin Idea</span>
+            <span className="btn-label-short">+ Pin</span>
           </button>
         </div>
       </header>
@@ -352,7 +436,7 @@ export default function App() {
       </div>
 
       {/* Cork board */}
-      <div className="cork-board">
+      <div className={`cork-board${isMobile ? ' cork-board-mobile' : ''}`}>
         {loading && <div className="empty-hint"><p>Loading ideas from chain…</p></div>}
         {!loading && visible.length === 0 && (
           <div className="empty-hint">
@@ -360,44 +444,13 @@ export default function App() {
           </div>
         )}
 
-        {visible.map((s) => {
-          const pos = positions[s.id];
-          if (!pos) return null;
-          return (
-            <div
-              key={s.id}
-              className={`postit${dragRef.current?.id === s.id ? ' dragging' : ''}`}
-              style={{ left: pos.x, top: pos.y, transform: `rotate(${pos.rotation}deg)`, backgroundColor: pos.color }}
-              onMouseDown={(e) => onMouseDown(e, s.id)}
-            >
-              {/* Pin — red for verified, grey for guest/local */}
-              <div className="postit-pin" style={!s.verified ? { background: 'radial-gradient(circle at 35% 35%, #aaa, #666)' } : {}} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <CategoryBadge category={s.category} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {s.local && (
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: '#92400e', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
-                      no xtz
-                    </span>
-                  )}
-                  {!s.local && !s.verified && (
-                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: 'rgba(0,0,0,0.35)', background: 'rgba(0,0,0,0.08)', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
-                      guest
-                    </span>
-                  )}
-                  {s.name && <span style={{ fontFamily: 'Caveat, cursive', fontSize: 13, color: 'rgba(0,0,0,0.5)', fontWeight: 600 }}>{s.name}</span>}
-                </div>
-              </div>
-              <p className="postit-text">{s.text}</p>
-              <div className="postit-meta">
-                <span>{shortAddr(s.author)} · {timeAgo(s.timestamp)}</span>
-                <button className={`postit-vote-btn${votedIds.has(s.id) ? ' voted' : ''}`} onClick={() => upvote(s.id)}>
-                  ▲ {s.votes}
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        {isMobile ? (
+          <div className="mobile-grid">
+            {visible.map((s) => renderNote(s))}
+          </div>
+        ) : (
+          visible.map((s) => renderNote(s))
+        )}
       </div>
 
       {/* Add note modal */}
