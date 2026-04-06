@@ -12,6 +12,7 @@ interface Suggestion {
   category: string;
   timestamp: number;
   votes: number;
+  verified: boolean;
 }
 
 interface NotePos {
@@ -35,14 +36,14 @@ const NOTE_COLORS = ['#FFF176', '#B3E5FC', '#C8E6C9', '#F8BBD9', '#FFE0B2'];
 const STORAGE_KEY = 'wtbot_positions_v3';
 
 const DEMO_SUGGESTIONS: Suggestion[] = [
-  { id: 0, author: '0x1234...5678', name: 'Alice', text: 'A decentralised lending protocol with XTZ as collateral', category: 'defi', timestamp: Date.now() / 1000 - 86400 * 3, votes: 14 },
-  { id: 1, author: '0xabcd...ef01', name: 'Bob', text: 'NFT marketplace for digital art with royalty splits on Etherlink', category: 'nft', timestamp: Date.now() / 1000 - 86400 * 2, votes: 9 },
-  { id: 2, author: '0xdead...beef', name: '', text: 'On-chain governance dashboard for Tezos bakers', category: 'infra', timestamp: Date.now() / 1000 - 86400, votes: 22 },
-  { id: 3, author: '0xcafe...babe', name: 'Carol', text: 'Cross-chain bridge UI between Tezos L1 and Etherlink with one click', category: 'wallet', timestamp: Date.now() / 1000 - 3600, votes: 7 },
-  { id: 4, author: '0x9876...4321', name: 'Dave', text: 'DEX aggregator pulling from all Etherlink liquidity sources', category: 'defi', timestamp: Date.now() / 1000 - 1800, votes: 18 },
-  { id: 5, author: '0x5555...aaaa', name: '', text: 'Real-world asset tokenisation platform on Tezos', category: 'consumer', timestamp: Date.now() / 1000 - 900, votes: 31 },
-  { id: 6, author: '0x7777...cccc', name: 'Eve', text: 'Web3 game with on-chain leaderboard and XTZ rewards', category: 'gaming', timestamp: Date.now() / 1000 - 600, votes: 11 },
-  { id: 7, author: '0x8888...dddd', name: 'Frank', text: 'Generative art collection with programmable traits on Etherlink', category: 'art', timestamp: Date.now() / 1000 - 300, votes: 5 },
+  { id: 0, author: '0x1234...5678', name: 'Alice', text: 'A decentralised lending protocol with XTZ as collateral', category: 'defi', timestamp: Date.now() / 1000 - 86400 * 3, votes: 14, verified: true },
+  { id: 1, author: '0xabcd...ef01', name: 'Bob', text: 'NFT marketplace for digital art with royalty splits on Etherlink', category: 'nft', timestamp: Date.now() / 1000 - 86400 * 2, votes: 9, verified: true },
+  { id: 2, author: '0x0000...0000', name: 'Anonymous', text: 'On-chain governance dashboard for Tezos bakers', category: 'infra', timestamp: Date.now() / 1000 - 86400, votes: 0, verified: false },
+  { id: 3, author: '0xcafe...babe', name: 'Carol', text: 'Cross-chain bridge UI between Tezos L1 and Etherlink with one click', category: 'wallet', timestamp: Date.now() / 1000 - 3600, votes: 7, verified: true },
+  { id: 4, author: '0x9876...4321', name: 'Dave', text: 'DEX aggregator pulling from all Etherlink liquidity sources', category: 'defi', timestamp: Date.now() / 1000 - 1800, votes: 18, verified: true },
+  { id: 5, author: '0x0000...0000', name: '', text: 'Real-world asset tokenisation platform on Tezos', category: 'consumer', timestamp: Date.now() / 1000 - 900, votes: 0, verified: false },
+  { id: 6, author: '0x7777...cccc', name: 'Eve', text: 'Web3 game with on-chain leaderboard and XTZ rewards', category: 'gaming', timestamp: Date.now() / 1000 - 600, votes: 11, verified: true },
+  { id: 7, author: '0x8888...dddd', name: 'Frank', text: 'Generative art collection with programmable traits on Etherlink', category: 'art', timestamp: Date.now() / 1000 - 300, votes: 5, verified: true },
 ];
 
 function loadPositions(): Record<number, NotePos> {
@@ -139,6 +140,7 @@ export default function App() {
         category: s.category,
         timestamp: Number(s.timestamp),
         votes: Number(s.votes),
+        verified: Boolean(s.verified),
       }));
       setSuggestions(list);
       if (account) {
@@ -189,18 +191,27 @@ export default function App() {
   async function submitSuggestion() {
     if (!draftText.trim()) return;
     if (isDemo) {
-      const newNote: Suggestion = { id: suggestions.length, author: '0xdemo...0000', name: draftName.trim(), text: draftText.trim(), category: draftCategory, timestamp: Date.now() / 1000, votes: 0 };
+      const newNote: Suggestion = { id: suggestions.length, author: account ?? '0x0000...0000', name: draftName.trim(), text: draftText.trim(), category: draftCategory, timestamp: Date.now() / 1000, votes: 0, verified: !!account };
       setSuggestions((prev) => [...prev, newNote]);
       setDraftText(''); setDraftName(''); setShowModal(false);
       showToast('Note pinned! (demo mode)');
       return;
     }
-    if (!account) { showToast('Connect your wallet first'); return; }
     try {
       setSubmitting(true);
-      const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
-      const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'addSuggestion', args: [draftText.trim(), draftName.trim(), draftCategory], account });
-      showToast(`Tx submitted: ${hash.slice(0, 10)}…`);
+      // Guest post — no wallet needed
+      if (!account) {
+        if (!window.ethereum) { showToast('Please install MetaMask to post on-chain'); setSubmitting(false); return; }
+        const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
+        const [addr] = await walletClient.requestAddresses();
+        const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'addSuggestionGuest', args: [draftText.trim(), draftName.trim(), draftCategory], account: addr });
+        showToast(`Guest note submitted: ${hash.slice(0, 10)}…`);
+      } else {
+        // Verified post — WXTZ holder
+        const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
+        const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'addSuggestion', args: [draftText.trim(), draftName.trim(), draftCategory], account });
+        showToast(`Verified note submitted: ${hash.slice(0, 10)}…`);
+      }
       setDraftText(''); setDraftName(''); setShowModal(false);
       setTimeout(loadSuggestions, 3000);
     } catch (e: unknown) {
@@ -274,7 +285,7 @@ export default function App() {
           ) : (
             <button className="btn btn-secondary" onClick={connect}>Connect Wallet</button>
           )}
-          <button className="btn btn-primary" onClick={() => { if (!account && !isDemo) { showToast('Connect wallet to post an idea'); return; } setShowModal(true); }}>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             + Pin Idea
           </button>
         </div>
@@ -320,10 +331,18 @@ export default function App() {
               style={{ left: pos.x, top: pos.y, transform: `rotate(${pos.rotation}deg)`, backgroundColor: pos.color }}
               onMouseDown={(e) => onMouseDown(e, s.id)}
             >
-              <div className="postit-pin" />
+              {/* Pin — red for verified, grey for guest */}
+              <div className="postit-pin" style={!s.verified ? { background: 'radial-gradient(circle at 35% 35%, #aaa, #666)' } : {}} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <CategoryBadge category={s.category} />
-                {s.name && <span style={{ fontFamily: 'Caveat, cursive', fontSize: 13, color: 'rgba(0,0,0,0.5)', fontWeight: 600 }}>{s.name}</span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {!s.verified && (
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: 'rgba(0,0,0,0.35)', background: 'rgba(0,0,0,0.08)', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
+                      guest
+                    </span>
+                  )}
+                  {s.name && <span style={{ fontFamily: 'Caveat, cursive', fontSize: 13, color: 'rgba(0,0,0,0.5)', fontWeight: 600 }}>{s.name}</span>}
+                </div>
               </div>
               <p className="postit-text">{s.text}</p>
               <div className="postit-meta">
