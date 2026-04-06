@@ -13,6 +13,7 @@ interface Suggestion {
   timestamp: number;
   votes: number;
   verified: boolean;
+  local?: boolean; // true = stored in localStorage only, no wallet
 }
 
 interface NotePos {
@@ -34,6 +35,14 @@ interface DragState {
 
 const NOTE_COLORS = ['#FFF176', '#B3E5FC', '#C8E6C9', '#F8BBD9', '#FFE0B2'];
 const STORAGE_KEY = 'wtbot_positions_v3';
+const LOCAL_NOTES_KEY = 'wtbot_local_notes_v1';
+
+function loadLocalNotes(): Suggestion[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_NOTES_KEY) ?? '[]'); } catch { return []; }
+}
+function saveLocalNotes(notes: Suggestion[]) {
+  localStorage.setItem(LOCAL_NOTES_KEY, JSON.stringify(notes));
+}
 
 const DEMO_SUGGESTIONS: Suggestion[] = [
   { id: 0, author: '0x1234...5678', name: 'Alice', text: 'A decentralised lending protocol with XTZ as collateral', category: 'defi', timestamp: Date.now() / 1000 - 86400 * 3, votes: 14, verified: true },
@@ -143,7 +152,9 @@ export default function App() {
         votes: Number(s.votes),
         verified: Boolean(s.verified),
       }));
-      setSuggestions(list);
+      // Merge local (no-wallet) notes — give them negative IDs to avoid collision
+      const localNotes = loadLocalNotes();
+      setSuggestions([...list, ...localNotes]);
       if (account) {
         const [checks, count] = await Promise.all([
           Promise.all(list.map((s) => client.readContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'voted', args: [BigInt(s.id), account] }))),
@@ -202,19 +213,35 @@ export default function App() {
     }
     try {
       setSubmitting(true);
-      // Guest post — no wallet needed
+
       if (!account) {
-        if (!window.ethereum) { showToast('Please install MetaMask to post on-chain'); setSubmitting(false); return; }
-        const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
-        const [addr] = await walletClient.requestAddresses();
-        const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'addSuggestionGuest', args: [draftText.trim(), draftName.trim(), draftCategory], account: addr });
-        showToast(`Guest note submitted: ${hash.slice(0, 10)}…`);
-      } else {
-        // Verified post — WXTZ holder
-        const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
-        const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'addSuggestion', args: [draftText.trim(), draftName.trim(), draftCategory], account });
-        showToast(`Verified note submitted: ${hash.slice(0, 10)}…`);
+        // No wallet — save to localStorage only
+        const localNotes = loadLocalNotes();
+        const newId = -(localNotes.length + 1); // negative IDs for local notes
+        const newNote: Suggestion = {
+          id: newId,
+          author: 'local',
+          name: draftName.trim(),
+          text: draftText.trim(),
+          category: draftCategory,
+          timestamp: Date.now() / 1000,
+          votes: 0,
+          verified: false,
+          local: true,
+        };
+        const updated = [...localNotes, newNote];
+        saveLocalNotes(updated);
+        setSuggestions((prev) => [...prev, newNote]);
+        setDraftText(''); setDraftName(''); setShowModal(false);
+        showToast('Note pinned locally — connect wallet to post on-chain');
+        return;
       }
+
+      // Wallet connected — post on-chain
+      const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
+      const fn = account ? 'addSuggestion' : 'addSuggestionGuest';
+      const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: fn, args: [draftText.trim(), draftName.trim(), draftCategory], account });
+      showToast(`Note submitted: ${hash.slice(0, 10)}…`);
       setDraftText(''); setDraftName(''); setShowModal(false);
       setTimeout(loadSuggestions, 3000);
     } catch (e: unknown) {
@@ -343,12 +370,17 @@ export default function App() {
               style={{ left: pos.x, top: pos.y, transform: `rotate(${pos.rotation}deg)`, backgroundColor: pos.color }}
               onMouseDown={(e) => onMouseDown(e, s.id)}
             >
-              {/* Pin — red for verified, grey for guest */}
+              {/* Pin — red for verified, grey for guest/local */}
               <div className="postit-pin" style={!s.verified ? { background: 'radial-gradient(circle at 35% 35%, #aaa, #666)' } : {}} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <CategoryBadge category={s.category} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {!s.verified && (
+                  {s.local && (
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: '#92400e', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
+                      no xtz
+                    </span>
+                  )}
+                  {!s.local && !s.verified && (
                     <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', color: 'rgba(0,0,0,0.35)', background: 'rgba(0,0,0,0.08)', borderRadius: 6, padding: '1px 5px', textTransform: 'uppercase' }}>
                       guest
                     </span>
