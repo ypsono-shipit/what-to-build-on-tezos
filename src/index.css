@@ -443,3 +443,133 @@ body {
 .category-chip.selected {
   font-weight: 700;
 }
+
+/* ── Mobile (< 768px) ─────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Header */
+  .header {
+    height: auto;
+    min-height: 52px;
+    padding: 8px 14px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .header-logo {
+    gap: 8px;
+  }
+
+  .header-logo > div:first-child {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .header-title {
+    font-size: 14px;
+    letter-spacing: -0.2px;
+  }
+
+  .header-subtitle {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .header-idea-count {
+    display: none;
+  }
+
+  .header-vote-count {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .wallet-pill {
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+
+  .btn {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .btn-label-full { display: none; }
+  .btn-label-short { display: inline; }
+
+  /* Filter bar — single row, horizontal scroll */
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 6px 12px;
+    gap: 5px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-btn {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  /* Cork board — scrollable, no overflow hidden */
+  .cork-board-mobile {
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: calc(100vh - 110px);
+  }
+
+  .cork-board-mobile .empty-hint {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  /* Mobile grid of notes */
+  .mobile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 14px 12px;
+  }
+
+  /* Post-it notes in mobile grid */
+  .postit-mobile {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    min-height: 140px;
+    cursor: default !important;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.22);
+  }
+
+  .postit-mobile:hover {
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.28);
+    z-index: auto;
+  }
+
+  .postit-text {
+    font-size: 14px;
+  }
+
+  /* Modal */
+  .modal {
+    padding: 20px 18px;
+  }
+}
+
+/* Show full button labels on desktop, hide short ones */
+.btn-label-short { display: none; }
