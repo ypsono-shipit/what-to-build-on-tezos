@@ -85,6 +85,9 @@ export const ABI = [
   },
 ] as const;
 
+// WXTZ ERC-20 token used for verified post/upvote gating
+export const WXTZ_ADDRESS = '0xc9B53AB2679f573e480d01e0f49e2B5CFB7a3EAb' as const;
+
 export const ETHERLINK_CHAIN = {
   id: 42793,
   name: 'Etherlink',
