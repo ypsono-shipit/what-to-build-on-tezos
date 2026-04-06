@@ -17,12 +17,13 @@ contract WhatToBuild {
         string category;
         uint256 timestamp;
         uint256 votes;
+        bool verified; // true = posted by WXTZ holder
     }
 
     Suggestion[] private _suggestions;
     mapping(uint256 => mapping(address => bool)) public voted;
 
-    event SuggestionAdded(uint256 indexed id, address indexed author, string text);
+    event SuggestionAdded(uint256 indexed id, address indexed author, string text, bool verified);
     event Upvoted(uint256 indexed id, address indexed voter);
 
     modifier holdsWXTZ() {
@@ -30,11 +31,30 @@ contract WhatToBuild {
         _;
     }
 
+    // Verified post — requires >= 1 WXTZ
     function addSuggestion(
         string calldata text,
         string calldata name,
         string calldata category
     ) external holdsWXTZ {
+        _add(text, name, category, true);
+    }
+
+    // Guest post — anyone can post, marked as unverified
+    function addSuggestionGuest(
+        string calldata text,
+        string calldata name,
+        string calldata category
+    ) external {
+        _add(text, name, category, false);
+    }
+
+    function _add(
+        string calldata text,
+        string calldata name,
+        string calldata category,
+        bool verified
+    ) internal {
         require(bytes(text).length > 0, "Text cannot be empty");
         require(bytes(text).length <= 280, "Text too long");
         require(bytes(name).length <= 50, "Name too long");
@@ -47,11 +67,13 @@ contract WhatToBuild {
             text: text,
             category: category,
             timestamp: block.timestamp,
-            votes: 0
+            votes: 0,
+            verified: verified
         }));
-        emit SuggestionAdded(id, msg.sender, text);
+        emit SuggestionAdded(id, msg.sender, text, verified);
     }
 
+    // Only verified (WXTZ holder) wallets can upvote
     function upvote(uint256 id) external holdsWXTZ {
         require(id < _suggestions.length, "Invalid suggestion");
         require(!voted[id][msg.sender], "Already voted");
