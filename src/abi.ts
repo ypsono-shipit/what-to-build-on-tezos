@@ -76,6 +76,13 @@ export const ABI = [
     ],
     outputs: [{ type: 'bool' }],
   },
+  {
+    type: 'function',
+    name: 'voteCount',
+    stateMutability: 'view',
+    inputs: [{ name: 'voter', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
 ] as const;
 
 export const ETHERLINK_CHAIN = {
