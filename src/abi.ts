@@ -29,6 +29,17 @@ export const ABI = [
   },
   {
     type: 'function',
+    name: 'addSuggestionGuest',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'text', type: 'string' },
+      { name: 'name', type: 'string' },
+      { name: 'category', type: 'string' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
     name: 'upvote',
     stateMutability: 'nonpayable',
     inputs: [{ name: 'id', type: 'uint256' }],
@@ -50,6 +61,7 @@ export const ABI = [
           { name: 'category', type: 'string' },
           { name: 'timestamp', type: 'uint256' },
           { name: 'votes', type: 'uint256' },
+          { name: 'verified', type: 'bool' },
         ],
       },
     ],
@@ -63,23 +75,6 @@ export const ABI = [
       { name: 'voter', type: 'address' },
     ],
     outputs: [{ type: 'bool' }],
-  },
-  {
-    type: 'event',
-    name: 'SuggestionAdded',
-    inputs: [
-      { name: 'id', type: 'uint256', indexed: true },
-      { name: 'author', type: 'address', indexed: true },
-      { name: 'text', type: 'string', indexed: false },
-    ],
-  },
-  {
-    type: 'event',
-    name: 'Upvoted',
-    inputs: [
-      { name: 'id', type: 'uint256', indexed: true },
-      { name: 'voter', type: 'address', indexed: true },
-    ],
   },
 ] as const;
 
