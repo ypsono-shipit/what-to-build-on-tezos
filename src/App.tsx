@@ -109,6 +109,7 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [positions, setPositions] = useState<Record<number, NotePos>>({});
   const [votedIds, setVotedIds] = useState<Set<number>>(new Set());
+  const [userVoteCount, setUserVoteCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState<Category | 'all'>('all');
   const [showModal, setShowModal] = useState(false);
   const [draftText, setDraftText] = useState('');
@@ -144,10 +145,12 @@ export default function App() {
       }));
       setSuggestions(list);
       if (account) {
-        const checks = await Promise.all(
-          list.map((s) => client.readContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'voted', args: [BigInt(s.id), account] }))
-        );
+        const [checks, count] = await Promise.all([
+          Promise.all(list.map((s) => client.readContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'voted', args: [BigInt(s.id), account] }))),
+          client.readContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'voteCount', args: [account] }),
+        ]);
         setVotedIds(new Set(list.filter((_, i) => checks[i]).map((s) => s.id)));
+        setUserVoteCount(Number(count));
       }
     } catch (e) {
       console.error(e);
@@ -223,16 +226,20 @@ export default function App() {
   // ── Upvote ────────────────────────────────────────────────────────────────────
   async function upvote(id: number) {
     if (isDemo) {
+      if (userVoteCount >= 5) { showToast('Vote limit reached (5 max)'); return; }
       setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, votes: s.votes + 1 } : s));
       setVotedIds((prev) => new Set([...prev, id]));
+      setUserVoteCount((prev) => prev + 1);
       return;
     }
-    if (!account) { showToast('Connect your wallet first'); return; }
-    if (votedIds.has(id)) { showToast('Already voted'); return; }
+    if (!account) { showToast('Connect your wallet to upvote'); return; }
+    if (votedIds.has(id)) { showToast('Already voted on this note'); return; }
+    if (userVoteCount >= 5) { showToast('Vote limit reached (5 max)'); return; }
     try {
       const walletClient = createWalletClient({ chain: ETHERLINK_CHAIN, transport: custom(window.ethereum) });
       const hash = await walletClient.writeContract({ address: CONTRACT_ADDRESS!, abi: ABI, functionName: 'upvote', args: [BigInt(id)], account });
       setVotedIds((prev) => new Set([...prev, id]));
+      setUserVoteCount((prev) => prev + 1);
       showToast(`Upvoted! Tx: ${hash.slice(0, 10)}…`);
       setTimeout(loadSuggestions, 3000);
     } catch (e: unknown) {
@@ -280,6 +287,11 @@ export default function App() {
         </div>
         <div className="header-actions">
           <span className="note-count">{suggestions.length} idea{suggestions.length !== 1 ? 's' : ''}</span>
+          {account && (
+            <span className="note-count" style={{ color: userVoteCount >= 5 ? '#ef4444' : 'rgba(255,255,255,0.4)' }}>
+              ▲ {5 - userVoteCount} vote{5 - userVoteCount !== 1 ? 's' : ''} left
+            </span>
+          )}
           {account ? (
             <span className="wallet-pill">{shortAddr(account)}</span>
           ) : (
