@@ -20,8 +20,11 @@ contract WhatToBuild {
         bool verified; // true = posted by WXTZ holder
     }
 
+    uint256 public constant MAX_VOTES_PER_USER = 5;
+
     Suggestion[] private _suggestions;
     mapping(uint256 => mapping(address => bool)) public voted;
+    mapping(address => uint256) public voteCount;
 
     event SuggestionAdded(uint256 indexed id, address indexed author, string text, bool verified);
     event Upvoted(uint256 indexed id, address indexed voter);
@@ -73,11 +76,13 @@ contract WhatToBuild {
         emit SuggestionAdded(id, msg.sender, text, verified);
     }
 
-    // Only verified (WXTZ holder) wallets can upvote
+    // Only verified (WXTZ holder) wallets can upvote, max 5 total
     function upvote(uint256 id) external holdsWXTZ {
         require(id < _suggestions.length, "Invalid suggestion");
-        require(!voted[id][msg.sender], "Already voted");
+        require(!voted[id][msg.sender], "Already voted on this");
+        require(voteCount[msg.sender] < MAX_VOTES_PER_USER, "Vote limit reached (5 max)");
         voted[id][msg.sender] = true;
+        voteCount[msg.sender] += 1;
         _suggestions[id].votes += 1;
         emit Upvoted(id, msg.sender);
     }
