@@ -8,8 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "compile": "hardhat compile",
-    "deploy:shadownet": "hardhat run scripts/deploy.cjs --network shadownet",
-    "deploy:mainnet": "hardhat run scripts/deploy.cjs --network etherlinkMainnet"
+    "deploy:shadownet": "hardhat run scripts/deploy.js --network shadownet",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network etherlinkMainnet"
   },
   "dependencies": {
     "react": "^18.3.1",
